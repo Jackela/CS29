@@ -1,0 +1,10 @@
+--- Alpha Exploration Results for HybridRandomAlgorithm ---
+
+| Alpha Value | Simulated Average Cost |
+|-------------|------------------------|
+| 0.5         | 27.1874                |
+| 1.0         | 17.1665                |
+| 1.5         | 16.0730                |
+| 2.0         | 15.4144                |
+| 2.5         | 14.9769                |
+| 3.0         | 14.6880                |
