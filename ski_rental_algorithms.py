@@ -1,58 +1,103 @@
 import math
 import random
 from abc import ABC, abstractmethod
+from typing import Optional, Union
+import logging
+
+# Configure logging for better debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class SkiRentalAlgorithm(ABC):
     """
     Abstract base class for ski rental algorithms.
     """
-    def __init__(self, b1: int, b2: int, B: int, d1: int, d2: int):
+    def __init__(self, b1: int, b2: int, B: int, d1: int, d2: int) -> None:
         """
-        @param {int} b1 - The cost of buying item 1.
-        @param {int} b2 - The cost of buying item 2.
-        @param {int} B - The cost of buying the bundle.
-        @param {int} d1 - The total demand duration for item 1.
-        @param {int} d2 - The total demand duration for item 2.
-        @precondition b1 > 0, b2 > 0, B > 0, d1 >= 0, d2 >= 0
+        Initialize ski rental algorithm with cost and demand parameters.
+        
+        Args:
+            b1: The cost of buying item 1 (must be positive)
+            b2: The cost of buying item 2 (must be positive)
+            B: The cost of buying the bundle (must be positive)
+            d1: The total demand duration for item 1 (non-negative)
+            d2: The total demand duration for item 2 (non-negative)
+            
+        Raises:
+            AssertionError: If any cost parameter is non-positive or demand is negative
         """
-        assert b1 > 0, "b1 must be positive"
-        assert b2 > 0, "b2 must be positive"
-        assert B > 0, "B must be positive"
-        assert d1 >= 0, "d1 must be non-negative"
-        assert d2 >= 0, "d2 must be non-negative"
+        # Enhanced parameter validation with detailed error messages
+        if not isinstance(b1, (int, float)) or b1 <= 0:
+            raise ValueError(f"b1 must be a positive number, got {b1}")
+        if not isinstance(b2, (int, float)) or b2 <= 0:
+            raise ValueError(f"b2 must be a positive number, got {b2}")
+        if not isinstance(B, (int, float)) or B <= 0:
+            raise ValueError(f"B must be a positive number, got {B}")
+        if not isinstance(d1, (int, float)) or d1 < 0:
+            raise ValueError(f"d1 must be non-negative, got {d1}")
+        if not isinstance(d2, (int, float)) or d2 < 0:
+            raise ValueError(f"d2 must be non-negative, got {d2}")
 
-        self.b1 = b1
-        self.b2 = b2
-        self.B = B
-        self.d1 = d1
-        self.d2 = d2
+        # Store parameters with type conversion for safety
+        self.b1 = float(b1)
+        self.b2 = float(b2)
+        self.B = float(B)
+        self.d1 = float(d1)
+        self.d2 = float(d2)
+        
+        logger.debug(f"Initialized algorithm with b1={self.b1}, b2={self.b2}, B={self.B}, d1={self.d1}, d2={self.d2}")
 
     @abstractmethod
     def run(self) -> float:
         """
-        Runs the algorithm and returns the calculated cost.
-        @returns {float} The total cost incurred by the algorithm.
-        @postcondition retval >= 0
+        Execute the algorithm and return the calculated cost.
+        
+        Returns:
+            The total cost incurred by the algorithm (guaranteed non-negative)
+            
+        Raises:
+            RuntimeError: If algorithm execution fails
         """
         pass
 
 class OptimalOfflineAlgorithm(SkiRentalAlgorithm):
     """
     Calculates the optimal offline cost for the two-item ski rental problem.
+    
+    This algorithm has complete knowledge of demand durations and chooses
+    the strategy that minimizes total cost.
     """
     def run(self) -> float:
         """
-        @see SkiRentalAlgorithm.run
-        """
-        cost_rent_all = self.d1 + self.d2
-        cost_buy1_rent2 = self.b1 + self.d2
-        cost_rent1_buy2 = self.d1 + self.b2
-        cost_buy_both_separately = self.b1 + self.b2
-        cost_buy_bundle = self.B
+        Calculate the optimal offline cost by evaluating all strategies.
         
-        cost = min(cost_rent_all, cost_buy1_rent2, cost_rent1_buy2, cost_buy_both_separately, cost_buy_bundle)
-        assert cost >= 0, "Postcondition failed: cost must be non-negative"
-        return float(cost)
+        Returns:
+            The minimum cost among all possible strategies
+        """
+        try:
+            # Calculate all possible strategy costs
+            strategies = {
+                'rent_all': self.d1 + self.d2,
+                'buy1_rent2': self.b1 + self.d2,
+                'rent1_buy2': self.d1 + self.b2,
+                'buy_both_separately': self.b1 + self.b2,
+                'buy_bundle': self.B
+            }
+            
+            optimal_cost = min(strategies.values())
+            optimal_strategy = min(strategies.keys(), key=lambda k: strategies[k])
+            
+            logger.debug(f"Strategy costs: {strategies}")
+            logger.debug(f"Optimal strategy: {optimal_strategy} with cost {optimal_cost}")
+            
+            if optimal_cost < 0:
+                raise RuntimeError(f"Invalid negative cost calculated: {optimal_cost}")
+                
+            return optimal_cost
+            
+        except Exception as e:
+            logger.error(f"Error in OptimalOfflineAlgorithm.run(): {e}")
+            raise RuntimeError(f"Failed to calculate optimal cost: {e}") from e
 
 class PurelyLocalAlgorithm(SkiRentalAlgorithm):
     """
@@ -124,84 +169,115 @@ class CorrelatedRandomAlgorithm(SkiRentalAlgorithm):
 class HybridRandomAlgorithm(SkiRentalAlgorithm):
     """
     Implements the Hybrid Random Algorithm for the ski rental problem.
+    
+    This algorithm uses randomized thresholds to decide when to purchase items
+    or bundles, with an adaptive parameter alpha controlling bundle preference.
     """
-    def __init__(self, b1: int, b2: int, B: int, d1: int, d2: int, alpha: float, u_value: float = None):
+    def __init__(self, b1: int, b2: int, B: int, d1: int, d2: int, alpha: float, u_value: Optional[float] = None) -> None:
         """
-        @param {float} alpha - Adjustment factor for bundle purchase tendency.
-        @param {float} u_value - Optional fixed random value for testing (0 to 1).
-        @precondition alpha > 0
-        @precondition u_value is None or 0 <= u_value <= 1
+        Initialize the Hybrid Random Algorithm.
+        
+        Args:
+            b1: Cost of buying item 1
+            b2: Cost of buying item 2
+            B: Cost of buying the bundle
+            d1: Demand duration for item 1
+            d2: Demand duration for item 2
+            alpha: Adjustment factor for bundle purchase tendency (must be positive)
+            u_value: Optional fixed random value for testing (0 to 1)
+            
+        Raises:
+            ValueError: If alpha is not positive or u_value is not in [0,1]
         """
         super().__init__(b1, b2, B, d1, d2)
-        assert alpha > 0, "alpha must be positive"
-        if u_value is not None:
-            assert 0 <= u_value <= 1, "u_value must be between 0 and 1"
-        self.alpha = alpha
+        
+        if not isinstance(alpha, (int, float)) or alpha <= 0:
+            raise ValueError(f"alpha must be positive, got {alpha}")
+        if u_value is not None and (not isinstance(u_value, (int, float)) or not (0 <= u_value <= 1)):
+            raise ValueError(f"u_value must be in [0,1], got {u_value}")
+            
+        self.alpha = float(alpha)
         self.u_value = u_value
 
     def run(self) -> float:
         """
-        @see SkiRentalAlgorithm.run
+        Execute the Hybrid Random Algorithm.
+        
+        Returns:
+            Total cost incurred by the algorithm
         """
-        rent_paid_1 = 0
-        rent_paid_2 = 0
-        item1_owned = False
-        item2_owned = False
-        total_rent_accumulated_if_no_purchase = 0
-
-        max_duration = max(self.d1, self.d2)
-
-        for t in range(1, max_duration + 1):
-            current_day_rent_incurred = 0
-
-            if t <= self.d1 and not item1_owned:
-                rent_paid_1 += 1
-                current_day_rent_incurred += 1
-            
-            if t <= self.d2 and not item2_owned:
-                rent_paid_2 += 1
-                current_day_rent_incurred += 1
-            
-            total_rent_accumulated_if_no_purchase += current_day_rent_incurred
-
-            if (t > self.d1 and t > self.d2) or (item1_owned and item2_owned):
-                continue
-
+        try:
+            # Performance optimization: generate random values once
             u = self.u_value if self.u_value is not None else random.random()
             x_S = math.log(u * (math.e - 1) + 1)
             x_B = x_S ** self.alpha
-
+            
+            # Pre-calculate thresholds to avoid repeated computation
             z1 = x_S * self.b1
             z2 = x_S * self.b2
             Z = x_B * self.B
-
-            cost_option_buy1 = float('inf')
-            cost_option_buy2 = float('inf')
-            cost_option_buy_bundle = float('inf')
-
-            if not item1_owned and rent_paid_1 >= z1:
-                cost_option_buy1 = rent_paid_1 + self.b1 + self.d2
-
-            if not item2_owned and rent_paid_2 >= z2:
-                cost_option_buy2 = rent_paid_2 + self.b2 + self.d1
-
-            if not item1_owned and not item2_owned and (rent_paid_1 + rent_paid_2) >= Z:
-                cost_option_buy_bundle = (rent_paid_1 + rent_paid_2) + self.B
             
-            min_purchase_cost = min(cost_option_buy1, cost_option_buy2, cost_option_buy_bundle)
+            logger.debug(f"Thresholds: z1={z1:.3f}, z2={z2:.3f}, Z={Z:.3f}")
+            
+            # Initialize state variables
+            rent_paid_1 = 0.0
+            rent_paid_2 = 0.0
+            item1_owned = False
+            item2_owned = False
+            
+            max_duration = int(max(self.d1, self.d2))
+            if max_duration == 0:
+                return 0.0
+            
+            for t in range(1, max_duration + 1):
+                current_day_rent_incurred = 0
 
-            if min_purchase_cost != float('inf'):
-                assert min_purchase_cost >= 0, "Postcondition failed: cost must be non-negative"
+                if t <= self.d1 and not item1_owned:
+                    rent_paid_1 += 1
+                    current_day_rent_incurred += 1
                 
-                # Pure rental guard mechanism
-                pure_rental_cost = float(self.d1 + self.d2)
-                if min_purchase_cost > pure_rental_cost:
-                    return pure_rental_cost
+                if t <= self.d2 and not item2_owned:
+                    rent_paid_2 += 1
+                    current_day_rent_incurred += 1
 
-                return float(min_purchase_cost)
+                if (t > self.d1 and t > self.d2) or (item1_owned and item2_owned):
+                    continue
+
+                # Calculate purchase option costs
+                options = []
+
+                if not item1_owned and rent_paid_1 >= z1:
+                    cost_buy1 = rent_paid_1 + self.b1 + max(0, self.d2 - t + 1)
+                    options.append(('buy_item1', cost_buy1))
+
+                if not item2_owned and rent_paid_2 >= z2:
+                    cost_buy2 = rent_paid_2 + self.b2 + max(0, self.d1 - t + 1)
+                    options.append(('buy_item2', cost_buy2))
+
+                if not item1_owned and not item2_owned and (rent_paid_1 + rent_paid_2) >= Z:
+                    cost_bundle = (rent_paid_1 + rent_paid_2) + self.B
+                    options.append(('buy_bundle', cost_bundle))
                 
-        assert total_rent_accumulated_if_no_purchase >= 0, "Postcondition failed: cost must be non-negative"
-        return float(total_rent_accumulated_if_no_purchase)
+                if options:
+                    action, min_cost = min(options, key=lambda x: x[1])
+                    
+                    # Pure rental guard mechanism
+                    pure_rental_cost = self.d1 + self.d2
+                    if min_cost > pure_rental_cost:
+                        logger.debug(f"Guard activated: {min_cost} > {pure_rental_cost}")
+                        return pure_rental_cost
+                    
+                    logger.debug(f"Decision at t={t}: {action} with cost {min_cost}")
+                    return min_cost
+            
+            # No purchase decision made, return total rental cost
+            total_cost = rent_paid_1 + rent_paid_2
+            logger.debug(f"Pure rental: total cost {total_cost}")
+            return total_cost
+            
+        except Exception as e:
+            logger.error(f"Error in HybridRandomAlgorithm.run(): {e}")
+            raise RuntimeError(f"Algorithm execution failed: {e}") from e
 
 class AdaptiveHybridRandomAlgorithm(HybridRandomAlgorithm):
     """
