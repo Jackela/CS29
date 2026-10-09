@@ -131,7 +131,7 @@ class CorrelatedRandomAlgorithm(SkiRentalAlgorithm):
         """
         @see SkiRentalAlgorithm.run
         """
-        u = random.random() if self.x_value is None else random.random()
+        u = random.random() if self.x_value is None else self.x_value
         x = math.log(u * (math.e - 1) + 1)
 
         z1 = x * self.b1
@@ -247,11 +247,11 @@ class HybridRandomAlgorithm(SkiRentalAlgorithm):
                 options = []
 
                 if not item1_owned and rent_paid_1 >= z1:
-                    cost_buy1 = rent_paid_1 + self.b1 + max(0, self.d2 - t + 1)
+                    cost_buy1 = rent_paid_1 + rent_paid_2 + self.b1 + max(0, self.d2 - t)
                     options.append(('buy_item1', cost_buy1))
 
                 if not item2_owned and rent_paid_2 >= z2:
-                    cost_buy2 = rent_paid_2 + self.b2 + max(0, self.d1 - t + 1)
+                    cost_buy2 = rent_paid_1 + rent_paid_2 + self.b2 + max(0, self.d1 - t)
                     options.append(('buy_item2', cost_buy2))
 
                 if not item1_owned and not item2_owned and (rent_paid_1 + rent_paid_2) >= Z:

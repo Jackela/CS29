@@ -1,0 +1,31 @@
+{
+  "baseline_sha": "b0cc06e0a50ab69ce51115e23e2134ce32e30f95",
+  "baseline_original_suite": {
+    "tests": 7,
+    "failures": 1,
+    "errors": 1
+  },
+  "baseline_reactivated_suite": {
+    "tests": 8,
+    "failures": 2,
+    "errors": 1
+  },
+  "candidate": {
+    "unit_tests": 8,
+    "passed": 8,
+    "bounded_fixed_input_cost_checks": 1000
+  },
+  "changes": [
+    "honor correlated fixed random input",
+    "account for both items past rent and remaining future rental days",
+    "align invalid input tests with existing ValueError contract"
+  ],
+  "formal_competitive_ratio_proof": "incomplete",
+  "historical_numeric_results": "preserved but not regenerated",
+  "not_verified": [
+    "general online policy information assumptions",
+    "fractional demand",
+    "Monte Carlo confidence claims",
+    "academic acceptance"
+  ]
+}
