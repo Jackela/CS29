@@ -34,7 +34,7 @@ class TestSkiRentalAlgorithms(unittest.TestCase):
         alg = PurelyLocalAlgorithm(self.b1, self.b2, self.B, self.d1, self.d2)
         self.assertEqual(alg.run(), 110, "Purely local cost should be sum of individual purchases.")
 
-    def _test_correlated_random_algorithm_fixed_x(self):
+    def test_correlated_random_algorithm_fixed_x(self):
         """
         Test the CorrelatedRandomAlgorithm with a fixed x value.
         Scenario: b1=10, b2=100, B=11, d1=10, d2=100
@@ -105,8 +105,8 @@ class TestSkiRentalAlgorithms(unittest.TestCase):
         # z2 = 30.95196
         # Z = 76.0909
         # At t=7: rent_paid_1=7, rent_paid_2=7. Total rent=14.
-        # cost_option_buy1 = 7 + 10 + 60 = 77 (since 7 >= z1)
-        # cost_option_buy2 = 7 + 50 + 20 = 77 (since 7 < z2, this option is not taken)
+        # cost_option_buy1 = 7 + 7 + 10 + (60 - 7) = 77 (since 7 >= z1)
+        # cost_option_buy2 is unavailable because item 2 rent 7 is below z2.
         # cost_option_buy_bundle = 14 + 100 = 114 (since 14 < Z, this option is not taken)
         # So, at t=7, buy item 1 is the best option. Cost = 77.
         alg = AdaptiveHybridRandomAlgorithm(b1=10, b2=50, B=100, d1=20, d2=60, u_value=0.5)
@@ -127,12 +127,12 @@ class TestSkiRentalAlgorithms(unittest.TestCase):
         self.assertAlmostEqual(cost, float(d1_test + d2_test), places=4, msg="Adaptive Hybrid cost for pure rental scenario is incorrect.")
 
     def test_precondition_assertions(self):
-        """Test that algorithms raise assertions for invalid preconditions."""
-        with self.assertRaises(AssertionError):
+        """Test existing ValueError and assertion contracts for invalid inputs."""
+        with self.assertRaises(ValueError):
             PurelyLocalAlgorithm(b1=-1, b2=100, B=11, d1=10, d2=100)
         with self.assertRaises(AssertionError):
             CorrelatedRandomAlgorithm(b1=10, b2=100, B=11, d1=10, d2=100, x_value=1.1)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             HybridRandomAlgorithm(b1=10, b2=100, B=11, d1=10, d2=100, alpha=-1.0)
         with self.assertRaises(AssertionError):
             AdaptiveHybridRandomAlgorithm(b1=10, b2=10, B=-1, d1=10, d2=10) # B must be positive for alpha calculation

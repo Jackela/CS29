@@ -1,5 +1,7 @@
 # Comprehensive Validation Report: Enhanced Ski Rental Algorithm
 
+> **Status: incomplete historical draft.** The original report ends at section 2.1. The protocol and conclusions below are historical claims, not a completed validation record. No general competitive-ratio proof has been established. Current bounded implementation checks and remaining assumptions are described in [MAINTENANCE.md](MAINTENANCE.md).
+
 ## Executive Summary
 
 This report presents rigorous Monte Carlo validation of the enhanced ski rental algorithms developed through systematic improvement methodology. The validation encompasses theoretical bounds verification, algorithmic performance assessment, and comprehensive statistical analysis across multiple scenarios.

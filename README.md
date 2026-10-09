@@ -2,13 +2,17 @@
 
 This project explores an adaptive hybrid random algorithm designed to address the two-level ski rental problem. While our empirical investigations suggest promising performance, we acknowledge that a comprehensive theoretical understanding, particularly regarding a general competitive ratio, remains an ongoing challenge.
 
+## Maintenance and evidence
+
+AI assists maintenance of this research repository. Markdown is the editable record. Run `python3 scripts/verify_research.py` for offline implementation checks; see [MAINTENANCE.md](MAINTENANCE.md) for their scope and unresolved assumptions. The general proof remains incomplete, and historical simulation artifacts have not been refreshed after the implementation repairs.
+
 ## Overview
 
 The ski rental problem is a classic online optimization problem. This work introduces an adaptive algorithm that attempts to balance rental costs with purchase decisions for two distinct items, incorporating a randomized approach and a dynamic adaptation mechanism.
 
 ## Current Status
 
-Our current efforts have focused on developing the algorithm and conducting extensive Monte Carlo simulations across various scenarios. These simulations provide strong empirical evidence of the algorithm's efficiency and robustness in practice. However, the formal theoretical proof of its competitive ratio, especially considering the complexities introduced by ceiling functions and multi-layered decision processes, has proven to be a non-trivial task.
+Our current efforts have focused on developing the algorithm and conducting extensive Monte Carlo simulations across various scenarios. These simulations are historical empirical observations for the tested scenarios; their results have not been regenerated after the current cost-accounting corrections. However, the formal theoretical proof of its competitive ratio, especially considering the complexities introduced by ceiling functions and multi-layered decision processes, has proven to be a non-trivial task.
 
 ## Limitations and Future Directions
 
